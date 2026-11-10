@@ -21,6 +21,21 @@ logger = logging.getLogger(__name__)
 _SPIN = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 _RST, _BOLD, _DIM = "\x1b[0m", "\x1b[1m", "\x1b[2m"
 _RED = "\x1b[38;2;239;83;80m"
+# The footer joins segments of one group with " · " and starts a new group with " │ " (same
+# width), so the bar reads as model │ context │ speed │ background work │ session │ mode. Hermes
+# fixes the segment order; these follow it. The footer's own extras (stash, cwd) are their own
+# groups, and the vi-mode label joins "mode".
+SEGMENT_GROUPS = {
+    "model": "model",
+    "context_detail": "context", "context_pct": "context", "cache_hit": "context",
+    "latency": "speed", "tps": "speed",
+    "compressions": "activity", "bg_tasks": "activity", "bg_processes": "activity",
+    "bg_subagents": "activity", "goal": "activity",
+    "git_branch": "session", "duration": "session", "prompt_elapsed": "session", "idle_since": "session",
+    "focus": "mode", "yolo": "mode", "vim": "mode",
+    "total_tokens": "tokens", "stash": "stash", "cwd": "cwd",
+}
+_SAME_GROUP, _NEW_GROUP = " · ", " │ "
 
 
 def is_modern(cli) -> bool:
@@ -315,9 +330,15 @@ def _render_safely(render, cli) -> list:
         return [("", f" {getattr(cli, 'model', '') or 'Hermes'}")]
 
 
+def _separator(previous_field: str | None, field: str | None) -> str:
+    """A new group starts with " │ " and one continues with " · "; an untagged segment never starts one."""
+    previous_group, group = SEGMENT_GROUPS.get(previous_field or ""), SEGMENT_GROUPS.get(field or "")
+    return _NEW_GROUP if previous_group and group and group != previous_group else _SAME_GROUP
+
+
 def _status_line_fragments(cli) -> list:
     """The classic bar's segments (same fields, same width tiers, same ``display.status_bar.fields``
-    filter), then cwd (branch) and the live key hints when there is room."""
+    filter), grouped by ``SEGMENT_GROUPS``, then cwd (branch) and the live key hints when there is room."""
     width = max(10, cli._get_tui_terminal_width())
     dim, strong = "class:status-bar-dim", "class:status-bar-strong"
     snapshot = cli._get_status_bar_snapshot()
@@ -327,20 +348,25 @@ def _status_line_fragments(cli) -> list:
         return field_set is None or name in field_set
 
     left: list = []
+    last_field = None
     for seg in cli._status_bar_segments(snapshot, width, field_set, cli._is_session_yolo_active(), styled=True):
+        field = getattr(seg, "field", None)
         if left:
-            left.append((dim, " · "))
+            left.append((dim, _separator(last_field, field)))
         left.extend(seg)
+        last_field = field
     stash = cli._prompt_stash.indicator() if _on("stash") and hasattr(cli, "_prompt_stash") else ""
     if stash:  # a parked draft is never silently forgotten
-        left += [(dim, " · "), (strong, stash)]
+        left += [(dim, _separator(last_field, "stash")), (strong, stash)]
+        last_field = "stash"
     battery = snapshot.get("battery_label") or ""  # only set while /battery is on
     if battery and _on("battery"):
         left[0:0] = [("", " "), (cli._battery_status_style(snapshot.get("battery_category", "dim")), battery),
-                     (dim, " ·")]
+                     (dim, _NEW_GROUP.rstrip())]
     vim = cli._vim_mode_label()
     if vim:
-        left += [(dim, " · "), (strong, vim)]
+        left += [(dim, _separator(last_field, "vim")), (strong, vim)]
+        last_field = "vim"
     right: list = []
     for key, text in hint_pairs(cli) if width >= 76 else []:
         if right:
@@ -352,7 +378,7 @@ def _status_line_fragments(cli) -> list:
     if field_set is None and room >= 12:  # cwd takes whatever the hints leave, trimmed from the left
         cwd = _cwd_label()
         cwd = cwd if len(cwd) <= room else "…" + cwd[-(room - 1):]
-        left += [(dim, " · "), (dim, cwd)]
+        left += [(dim, _separator(last_field, "cwd")), (dim, cwd)]
         used_left += 3 + cli._status_bar_display_width(cwd)
     if right and used_left + used_right + 2 > width:
         right, used_right = [], 0

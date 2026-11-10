@@ -27,6 +27,16 @@ _AGENT_COUNTERS = (
     "session_total_tokens", "session_api_calls")
 
 
+class StatusSegment(list):
+    """One status-bar segment's ``(style, text)`` fragments, tagged with the field it shows, so a
+    renderer can tell where one group of segments ends (``cli_modern_layout.SEGMENT_GROUPS``). It
+    is still a plain list for every renderer that only joins fragments."""
+
+    def __init__(self, field: str, fragments):
+        super().__init__(fragments)
+        self.field = field
+
+
 def _threshold_style(value, ladder, fallback: str) -> str:
     """First ``class:status-bar-<name>`` whose ``value >= bound`` in a descending ladder."""
     for bound, name in ladder:
@@ -1034,7 +1044,7 @@ class CLIStatusBarMixin:
 
         def add(name, style, text):
             if _ok(name):
-                segs.append([(style, text)])
+                segs.append(StatusSegment(name, [(style, text)]))
 
         def add_count(name, key, glyph, style=_STRONG):
             count = snapshot.get(key, 0)
@@ -1043,9 +1053,9 @@ class CLIStatusBarMixin:
 
         if _ok("model"):
             if styled:
-                segs.append([(_SB, " ☤ "), (_STRONG, model_short)])
+                segs.append(StatusSegment("model", [(_SB, " ☤ "), (_STRONG, model_short)]))
             else:
-                segs.append([("", f"☤ {model_short}")])
+                segs.append(StatusSegment("model", [("", f"☤ {model_short}")]))
         narrow, wide = width < 52, width >= 76
         if narrow:
             # Narrow bars put duration ahead of the goal segment; the other tiers reverse it.
@@ -1063,15 +1073,15 @@ class CLIStatusBarMixin:
                     context_label = f"{mark}{ctx_used}/{ctx_total}{pin}"
                 else:
                     context_label = t("cli.status_bar.ctx_unknown")
-                segs.append([(_DIM, context_label)])
+                segs.append(StatusSegment("context_detail", [(_DIM, context_label)]))
             if _ok("context_pct"):
                 bar_style = self._status_bar_context_style(percent)
                 if wide and styled:
-                    segs.append([
+                    segs.append(StatusSegment("context_pct", [
                         (bar_style, self._build_context_bar(percent)), (_DIM, " "), (bar_style, percent_label),
-                    ])
+                    ]))
                 else:
-                    segs.append([(bar_style, percent_label)])
+                    segs.append(StatusSegment("context_pct", [(bar_style, percent_label)]))
             cache = self._cache_hit_rate(snapshot, precision=1 if wide else 0)
             if cache:
                 add("cache_hit", self._cache_hit_rate_style(cache[0]), cache[1])
@@ -1105,7 +1115,7 @@ class CLIStatusBarMixin:
             # Session token total (Σ) — opt-in only via an explicit fields list.
             total_tokens = snapshot.get("session_total_tokens", 0)
             if total_tokens and field_set is not None and "total_tokens" in field_set:
-                segs.append([(_DIM, f"Σ{format_token_count_compact(total_tokens)}")])
+                segs.append(StatusSegment("total_tokens", [(_DIM, f"Σ{format_token_count_compact(total_tokens)}")]))
         return segs
 
     def _build_status_bar_text(self, width: Optional[int] = None) -> str:
