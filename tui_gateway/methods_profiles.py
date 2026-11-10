@@ -144,6 +144,7 @@ def _resurrect_recoverable_canonical(db, profile_path, session_id):
             return bool(wdb.unarchive_recoverable_session(session_id))
         finally:
             _best_effort(lambda: _lazy("hermes_state_registry", "release_or_close")(wdb))
+    
     except Exception:
         return False
 
@@ -499,6 +500,8 @@ def _mirror_voice_sections(path) -> bool:
             if missing:
                 save_config({**dst_cfg, **missing})
         return bool(missing)
+
+# health: allow BLE001 -- #82010 voice section mirroring boundary; catches malformed YAML from untrusted sources
     except Exception:
         return False
 

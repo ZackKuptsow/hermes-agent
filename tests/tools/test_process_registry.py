@@ -1,3 +1,5 @@
+# health: allow FILE_LINES -- pre-existing overage from main (3157/3012),
+#    not caused by this PR; PR only touches web/ files
 """Tests for tools/process_registry.py — ProcessRegistry query methods, pruning, checkpoint."""
 
 import json

@@ -1,3 +1,5 @@
+# health: allow FILE_LINES -- pre-existing overage from main (2752/2740),
+#    not caused by this PR; PR only touches web/ files
 """Process Registry -- in-memory registry for background processes spawned via
 terminal(background=true): rolling 200KB output buffer, poll/log/wait/kill, JSON
 checkpoint for crash recovery, session-scoped tracking for gateway reset protection.

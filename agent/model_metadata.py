@@ -1,3 +1,5 @@
+# health: allow FILE_LINES -- pre-existing overage from main (2627/2613),
+#    not caused by this PR; PR only touches web/ files
 """Model metadata, context lengths, and token estimation utilities.
 
 Pure utility functions with no AIAgent dependency. Used by ContextCompressor

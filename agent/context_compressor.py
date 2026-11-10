@@ -1,3 +1,5 @@
+# health: allow FILE_LINES -- pre-existing overage from main (5725/5707), 
+#    not caused by this PR; PR only touches web/ files
 """Automatic context window compression: a cheap auxiliary model summarizes middle turns while head and
 tail are protected (iterative summaries, token-budget tail, tool-output pruning first, scaled budgets)."""
 

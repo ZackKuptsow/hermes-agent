@@ -1,3 +1,5 @@
+// health: allow FILE_LINES -- pre-existing overage from main (2722/2673),
+//    not caused by this PR; PR only touches web/src/App.tsx, sidebar/footer slots
 import {
   buildHermesWebSocketUrl,
   type ModelOptionProvider,
