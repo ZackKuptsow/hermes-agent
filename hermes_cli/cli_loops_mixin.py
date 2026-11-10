@@ -260,6 +260,10 @@ class CLILoopsMixin:
         self._console_print(text, highlight=False, markup=False)
 
     def _cmd_statusbar(self, cmd_original: str):
+        if [arg.lower() for arg in cmd_original.split()[1:2]] == ["legend"]:
+            from hermes_cli import cli_status_bar_legend
+            cli_status_bar_legend.toggle(self)  # the panel appearing (or leaving) is the feedback
+            return
         self._status_bar_visible = not self._status_bar_visible
         self._console_print(
             f"  {t('cli.display.status_bar_visible') if self._status_bar_visible else t('cli.display.status_bar_hidden')}")

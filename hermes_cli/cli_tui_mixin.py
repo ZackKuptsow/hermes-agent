@@ -40,6 +40,7 @@ from prompt_toolkit.widgets import TextArea
 from typing import Optional
 
 from hermes_cli import cli_enter_burst as _enter_burst
+from hermes_cli import cli_status_bar_legend as status_bar_legend
 from hermes_cli.cli_enter_burst import RAPID_INPUT_ENTER_WINDOW_S as _RAPID_INPUT_ENTER_WINDOW_S
 from hermes_cli.cli_footer_split import FooterSplit
 from hermes_cli.cli_panel import _Panel
@@ -390,6 +391,7 @@ class CLITuiMixin:
             *self._get_extra_tui_widgets(),
             getattr(self, "_pet_widget", None),
             getattr(self, "_stash_panel_widget", None),
+            getattr(self, "_status_bar_legend_widget", None),
             getattr(self, "_subagent_dock_widget", None),
             status_bar,
             input_rule_top,
@@ -1948,6 +1950,8 @@ class CLITuiMixin:
             lambda event: toggle_dock(self))
         kb.add('f7', filter=Condition(lambda: not modal_prompt_active(self)))(
             lambda event: toggle_dock(self))
+        kb.add('f1', filter=Condition(lambda: not modal_prompt_active(self)))(
+            lambda event: status_bar_legend.toggle(self))
         return kb
 
     def _tui_bind_editor_and_stash(self, kb) -> None:
@@ -2160,6 +2164,7 @@ class CLITuiMixin:
             Window(FormattedTextControl(self._get_stash_panel_display_fragments), wrap_lines=False),
             filter=Condition(lambda: cli_ref._prompt_stash.panel_open and bool(len(cli_ref._prompt_stash))),
         )
+        self._status_bar_legend_widget = status_bar_legend.legend_widget(self)
         self._register_extra_tui_keybindings(kb, input_area=input_area)
         layout = Layout(FooterSplit(self._build_tui_layout_children(
             sudo_widget=sudo_widget,

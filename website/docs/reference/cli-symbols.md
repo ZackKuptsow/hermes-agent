@@ -32,7 +32,7 @@ What you see in the conversation flow while the agent works.
 
 ## Status-bar symbols
 
-The single line at the bottom of the TUI. Segments appear only when relevant and drop off first on narrow terminals.
+The single line at the bottom of the TUI. Segments appear only when relevant and drop off first on narrow terminals. The Classic CLI's bar uses its own glyphs (`◎` cache hit, `◷` latency, `↑` output speed, `⏲` turn time, …): press `F1` or run `/statusbar legend` there for a panel that names each one.
 
 | Symbol | Meaning |
 |--------|---------|

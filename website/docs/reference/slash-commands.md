@@ -88,7 +88,7 @@ Type `/` in the CLI to open the autocomplete menu. Built-in commands are case-in
 | `/skin` | Show or change the display skin/theme |
 | `/export [profile] [-o out.tar.gz]` | **CLI only.** Pack a profile into a shareable `.tar.gz` — skills, memory, persona, crons, plugins, settings, and (from the desktop) themes and layout. Credentials (`auth.json`, `.env`) are stripped. Defaults to the active profile and `<name>.tar.gz` in the current directory. Same archive as `hermes profile export`; for a versioned, updatable share use a [profile distribution](../user-guide/profile-distributions.md) instead. |
 | `/import <archive.tar.gz> [--name <name>]` | **CLI only.** Install a profile archive as a new profile, inferring the name from the archive unless `--name` is given. Refuses to overwrite an existing profile and cannot import as `default`. Creates a shell wrapper when the name is free. See [Export and import a profile file](../user-guide/profile-distributions.md#export-and-import-a-profile-file). |
-| `/statusbar` (alias: `/sb`) | Toggle the context/model status bar on or off |
+| `/statusbar` (alias: `/sb`) | Toggle the context/model status bar on or off. `/statusbar legend` toggles a panel above the prompt that names each segment the bar can show, what it means, and the `display.status_bar.fields` name that hides it (also `F1`) |
 | `/battery [on\|off\|status]` | Toggle a color-coded battery read-out as the first status-bar element (off by default; no-op without a battery). |
 | `/voice [on\|off\|tts\|status]` | Toggle CLI voice mode and spoken playback. Recording uses `voice.record_key` (default: `Ctrl+B`). |
 | `/yolo` | Toggle YOLO mode — skip all dangerous command approval prompts. |

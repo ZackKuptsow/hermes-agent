@@ -585,6 +585,7 @@ class CLIInitMixin:
         self._voice_barge_phase = None  # "generation" | "playback"
 
         self._status_bar_visible = _status_bar_visible_from_display_config(CLI_CONFIG.get("display"))
+        self._status_bar_legend_open = False  # F1 / ``/statusbar legend`` (cli_status_bar_legend)
         self._battery_visible = bool(CLI_CONFIG["display"].get("battery", False))
         # Vi/vim editing mode for the input composer (display.vim_mode, config-only).
         # Off by default: prompt_toolkit's standard emacs bindings.
