@@ -784,6 +784,50 @@ def _coalesced_output(output):
             flush()
 
 
+# Terminals that hold the screen through a DEC 2026 synchronized update: the TUI's list
+# (``isSynchronizedOutputSupported`` in ui-tui/packages/hermes-ink/src/ink/terminal.ts).
+_SYNCHRONIZED_OUTPUT_PROGRAMS = frozenset(
+    {"iTerm.app", "WezTerm", "WarpTerminal", "ghostty", "contour", "vscode", "alacritty"})
+
+
+def _synchronized_output_supported(environ=None) -> bool:
+    """Whether the terminal is known to support DEC 2026. Never inside tmux or Zellij: they
+    pass the markers on after chunking the stream themselves, and Zellij then repeats old
+    frames into scrollback (#66490)."""
+    environ = os.environ if environ is None else environ
+    if environ.get("TMUX") or environ.get("ZELLIJ"):
+        return False
+    term = environ.get("TERM", "")
+    if (environ.get("TERM_PROGRAM") in _SYNCHRONIZED_OUTPUT_PROGRAMS or environ.get("KITTY_WINDOW_ID")
+            or environ.get("ZED_TERM") or environ.get("WT_SESSION")):
+        return True
+    if "kitty" in term or "alacritty" in term or term == "xterm-ghostty" or term.startswith("foot"):
+        return True
+    vte = environ.get("VTE_VERSION", "")
+    return vte.isdigit() and int(vte) >= 6800  # GNOME Terminal, Tilix: VTE 0.68+
+
+
+@contextmanager
+def _synchronized_update(output):
+    """Hold the terminal's screen while the block writes (DEC 2026), where it is known to support it.
+
+    ``_coalesced_output`` makes a paint one write, but a terminal may still show it half
+    drawn: the pseudo-terminal hands it over in pieces (1 KB at a time on macOS), and one
+    piece ends with the chrome erased and not yet repainted. Inside a synchronized update
+    the terminal keeps showing the previous frame until the update ends. Only for
+    prompt_toolkit's VT100 output: a Win32 console would print the markers.
+    """
+    from prompt_toolkit.output.vt100 import Vt100_Output
+    if not (isinstance(output, Vt100_Output) and _synchronized_output_supported()):
+        yield
+        return
+    output.write_raw("\x1b[?2026h")
+    try:
+        yield
+    finally:
+        output.write_raw("\x1b[?2026l")
+
+
 def _cprint(text: str, *, raw: str = ""):
     """Print ANSI text through prompt_toolkit's renderer (patch_stdout swallows raw ANSI).
 
@@ -877,7 +921,8 @@ def _cprint(text: str, *, raw: str = ""):
             columns = app.output.get_size().columns
             # Erase + print + redraw as ONE terminal write: split, the erase leaves the
             # chrome blank for the frame in between, which reads as a flicker over ssh (#1624).
-            with _coalesced_output(app.output):
+            # The synchronized update keeps the terminal from showing that write half drawn.
+            with _coalesced_output(app.output), _synchronized_update(app.output):
                 renderer.erase()
                 paint_now()
                 renderer.reset()
